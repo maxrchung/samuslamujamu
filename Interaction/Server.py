@@ -1,57 +1,86 @@
 import Global
 from ServerCharacter import *
-from ServerGame import *
+import ServerGame
 from ServerPlayer import *
 
 class Server:
     def __init__(self):
         self.inputManagers = []
-        
-        self.player = ServerPlayer(1)
-        self.players = {
-            self.player.uid: self.player
-        }
+        self.players  = {}
+        self.games = {}    
 
-        self.game = ServerGame(1)
-        self.games = [self.game]
-        
-        self.character = ServerCharacter(self.game, 1, [400.0,400.0])
-        self.dummy = ServerCharacter(self.game, 2, [300.0,300.0])
-        self.characters = {
-            self.character.uid: self.character,
-            self.dummy.uid: self.dummy
-        }
+        self.playerID = 0
+        self.gameID = 0
+        self.characterID = 0
 
-        self.associatePlayer(self.player, self.game, self.character)
-        self.associateGame(self.game, self.characters)
+        player1 = self.createPlayer()
+        player2 = self.createPlayer()
+        self.createGame(player1, player2)
 
         self.running = True
+
+    def getPlayerID(self):
+        self.playerID += 1
+        return self.playerID
+
+    def getGameID(self):
+        self.gameID += 1
+        return self.gameID
+
+    def getCharacterID(self):
+        self.characterID += 1
+        return self.characterID
+
+    def createPlayer(self):
+        self.player = ServerPlayer(self.getPlayerID())
+        self.players[self.player.uid] = self.player
+        return self.player
 
     def associatePlayer(self, player, game, character):
         player.character = character
         player.game = game
+        character.player = player
         
     def associateGame(self, game, characters):
         game.characters = characters
         for charID, character in characters.items():
             character.game = game
-        Global.gameState = GameState(characters, game.bullets)
+        Global.gameState = GameState(characters, game.projectiles)
         game.gameState = Global.gameState
+    
+    def createGame(self, player1, player2):
+        game = ServerGame.ServerGame(self.getGameID())
+        self.games[game.uid] = game
 
+        topPos = [ServerGame.width / 2, 100]
+        botPos = [ServerGame.width / 2, ServerGame.height - 100]
+        character1 = ServerCharacter(self.getCharacterID(), topPos)
+        character2 = ServerCharacter(self.getCharacterID(), botPos)
+        characters = {
+            character1.uid: character1,
+            character2.uid: character2
+        }
+
+        self.associatePlayer(player1, game, character1)
+        self.associatePlayer(player2, game, character2)
+        
+        self.associateGame(game, characters)
+        return game
+    
     def run(self):
         # while self.running:
-            self.inputManagers = []
-            
-            # TODO: Do this via network queue
-            self.inputManagers += [Global.inputManager]
+            inputManagers = []
 
-            self.updateInput()
+            playerID = 1
+            inputManagers.append([Global.inputManager, playerID])
+            
+            for inputManager, playerID in inputManagers:
+                self.updateInput(inputManager, playerID)
         
-            for game in self.games:
+            for gameID, game in self.games.items():
                 game.run()
 
-    def updateInput(self):
-        for inputManager in self.inputManagers:
-            player = self.players[inputManager.playerID]
-            if player and  player.game.canUpdate():
-                player.character.update(inputManager)
+    def updateInput(self, inputManager, playerID):
+        player = self.players[playerID]
+        if player and player.game.canUpdate():
+            player.character.update(inputManager)

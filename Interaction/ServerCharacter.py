@@ -1,18 +1,21 @@
+from Ability import *
 from ServerGame import *
 from InputManager import *
 import pygame
 
 width = 50.0
 height = 50.0
+maxHealth = 1
 
 class ServerCharacter:
-    def __init__(self, game, uid, pos):
+    def __init__(self, uid, pos):
         # Unique ID associated with character
         self.uid = uid
-        self.game = game
+        self.player = None
+        self.game = None
         self.pos = pos
 
-        self.health = 1
+        self.health = maxHealth
         
         self.vel = [0.0,0.0]
         # Velocity delta
@@ -24,6 +27,9 @@ class ServerCharacter:
         self.width = width
         self.height = height
         self.setRect()
+
+        self.mainAbility = Ability(0.5)
+        self.reallySmallNumber = 0.0001
         
     def update(self, inputManager):
         self.vel[0] *= self.velRed[0]
@@ -53,7 +59,14 @@ class ServerCharacter:
         self.pos[1] += self.vel[1]
 
         if inputManager.mainAbility:
-            self.game.spawnBullet(self, inputManager.mousePos)
+            if self.mainAbility.ready():
+                self.game.spawnProjectile(self, inputManager.mousePos)
 
+    def applyDamage(self, damage):
+        self.health -= damage
+        if self.health < self.reallySmallNumber:
+            print "Game over!"
+            self.health = 0
+                
     def setRect(self):
         self.rect = pygame.Rect(self.pos[0] - self.width / 2.0, self.pos[1] - self.height / 2.0, self.width, self.height)

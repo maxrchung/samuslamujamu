@@ -9,5 +9,6 @@ class EventManager:
     def update(self):
         for event in pygame.event.get():
             if event.type==pygame.QUIT:
+                pygame.display.quit()
                 pygame.quit()
                 sys.exit()

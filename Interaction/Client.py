@@ -1,4 +1,5 @@
 from ClientGame import *
+import ClientState
 from EventManager import *
 import Global
 import pygame
@@ -9,7 +10,10 @@ class Client:
         self.eventManager = EventManager()
         self.running = True
 
-        self.game = ClientGame()
+        self.uid = 1
+        
+        self.game = None
+        self.state = ClientState.matchMaking
     
     def getInput(self):
         inputManager = Global.inputManager
@@ -36,6 +40,10 @@ class Client:
 
     def run(self):
 #        while self.running:
+        if self.state == ClientState.matchMaking:
+            self.state = ClientState.game
+            self.game = ClientGame(self)
+        elif self.state == ClientState.game:
             self.eventManager.update()
             self.getInput()
             self.game.update(Global.gameState)
