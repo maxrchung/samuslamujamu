@@ -1,8 +1,10 @@
 from GameState import *
 import Global
-from ServerBullet import *
+from ServerProjectile import *
 from ServerCharacter import *
+from Vector import *
 import pygame
+from sets import Set
 import time
 
 windowSize = width, height = 1280, 720
@@ -11,7 +13,7 @@ class ServerGame:
     def __init__(self, uid):
         # Unique ID for game
         self.uid = uid
-        self.characters = []
+        self.characters = {}
 
         self.windowSize = windowSize
 
@@ -19,8 +21,8 @@ class ServerGame:
         self.nextUpdate = 0
 
         self.gameState = None
-        self.bullets = {}
-        self.bulletID = 0
+        self.projectiles = {}
+        self.projectileID = 0
 
     def run(self):
         if self.canUpdate():
@@ -33,38 +35,46 @@ class ServerGame:
         return can
         
     def update(self):
-        for charID, character in self.characters.items():
-            # Wall collision
-            self.wallCollision(character)
+        self.wallCollision(self.characters)
+
+        removeProjectileIDs = Set()
+        for projectileID, projectile in self.projectiles.items():
+            projectile.update()
+            projectile.setRect()
+            self.projectileCollision(self.characters, projectile, removeProjectileIDs)
+            
+        for projectileID, projectile in self.projectiles.items():
+            projectile.update()
+            if projectile.getDistSquared() > projectile.totalDistSquared:
+                removeProjectileIDs.add(projectile.uid)
+
+        while len(removeProjectileIDs) != 0:
+            del self.projectiles[removeProjectileIDs.pop()]
+
+    def getProjectileID(self):
+        self.projectileID += 1
+        return self.projectileID
+        
+    def spawnProjectile(self, character, mousePos):
+        projectile = ServerProjectile(self.getProjectileID(), character, character.pos, mousePos)
+        self.projectiles[projectile.uid] = projectile
+
+    def projectileCollision(self, characters, projectile, removeProjectileIDs):
+        for charID, character in characters.items():
+            if projectile.character != character:
+                diff = Vector(character.pos).minus(projectile.pos)
+                if diff.length() < character.width / 2 + projectile.width / 2:
+                    removeProjectileIDs.add(projectile.uid)
+                    character.applyDamage(projectile.damage)
+                
+    def wallCollision(self, characters):
+        for charID, character in self.characters.items():            
+            if character.pos[0] - character.width / 2 < 0:
+                character.pos[0] = character.width / 2
+            elif character.pos[0] + character.width / 2 > self.windowSize[0]:
+                character.pos[0] = self.windowSize[0] - character.width / 2
+            if character.pos[1] - character.height / 2 < 0:
+                character.pos[1] = character.height / 2
+            elif character.pos[1] + character.height / 2 > self.windowSize[1]:
+                character.pos[1] = self.windowSize[1] - character.height / 2
             character.setRect()
-
-        for bulletID, bullet in self.bullets.items():
-            bullet.update()
-            bullet.setRect()
-        
-        removeBulletIDs = []
-        for bulletID, bullet in self.bullets.items():
-            bullet.update()
-            if bullet.getDistSquared() > bullet.totalDistSquared:
-                removeBulletIDs += [bullet.uid]
-
-        while len(removeBulletIDs) != 0:
-            del self.bullets[removeBulletIDs.pop()]
-
-    def getBulletID(self):
-        self.bulletID += 1
-        return self.bulletID
-        
-    def spawnBullet(self, character, mousePos):
-        bullet = ServerBullet(self.getBulletID(), character, character.pos, mousePos)
-        self.bullets[bullet.uid] = bullet
-
-    def wallCollision(self, character):
-        if character.pos[0] - character.width / 2 < 0:
-            character.pos[0] = character.width / 2
-        elif character.pos[0] + character.width / 2 > self.windowSize[0]:
-            character.pos[0] = self.windowSize[0] - character.width / 2
-        if character.pos[1] - character.height / 2 < 0:
-            character.pos[1] = character.height / 2
-        elif character.pos[1] + character.height / 2 > self.windowSize[1]:
-            character.pos[1] = self.windowSize[1] - character.height / 2

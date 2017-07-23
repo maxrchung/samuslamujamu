@@ -1,5 +1,5 @@
 class GameState:
-    def __init__(self, characters, bullets):
+    def __init__(self, characters, projectiles):
         self.characters = characters
-        self.bullets = bullets
+        self.projectiles = projectiles
         

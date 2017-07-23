@@ -1,17 +1,18 @@
 from Vector import *
 import pygame
 
-width = 10.0
-height = 10.0
+width = 20.0
+height = 20.0
 
-class ServerBullet:
-    def __init__(self, bulletID, character, characterPos, mousePos):
-        self.uid = bulletID
+class ServerProjectile:
+    def __init__(self, projectileID, character, characterPos, mousePos):
+        self.uid = projectileID
         self.character = character
         self.startPos = Vector(characterPos)
         self.pos = Vector(characterPos)
         self.endPos = Vector(mousePos)
-        self.velMagnitude = 3
+        self.velMagnitude = 6
+        self.damage = 0.1
         
         self.width = width
         self.height = height
@@ -24,7 +25,6 @@ class ServerBullet:
 
     def update(self):
         self.pos = self.pos.add(self.move)
-        print self.pos.toString()
 
     def getDistSquared(self):
         dist = self.pos.minus(self.startPos).lengthSquared()
