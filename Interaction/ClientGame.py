@@ -1,3 +1,4 @@
+from ClientBullet import *
 from ClientCharacter import *
 import pygame
 import ServerGame
@@ -12,6 +13,7 @@ class ClientGame:
         self.nextUpdate = 0
 
         self.characters = {}
+        self.bullets = {}
 
     def run(self, gameState):
         now = time.time()
@@ -21,17 +23,22 @@ class ClientGame:
             self.draw()
         
     def update(self, gameState):
-        if len(self.characters) != len(gameState.characters):
-            self.characters.clear()
-            for charID in gameState.characters:
-                self.characters[charID] = ClientCharacter(self)
-                
+        self.characters.clear()
         for charID, schar in gameState.characters.items():
+            self.characters[charID] = ClientCharacter(self)
             self.characters[charID].pos = schar.pos
             self.characters[charID].rect = schar.rect
+
+        self.bullets.clear()
+        for bulletID, bullet in gameState.bullets.items():
+            self.bullets[bulletID] = ClientBullet(self)
+            self.bullets[bulletID].pos = bullet.pos
+            self.bullets[bulletID].rect = bullet.rect
 
     def draw(self):
         self.display.fill(self.bgColor)
         for charID, character in self.characters.items():
             character.draw()
+        for bulletID, bullet in self.bullets.items():
+            bullet.draw()
         pygame.display.flip()

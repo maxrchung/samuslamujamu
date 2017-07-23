@@ -28,6 +28,12 @@ class Client:
         if keys[pygame.K_d]:
             inputManager.moveRight = True
 
+        mouse = pygame.mouse.get_pressed()
+        if mouse[0]:
+            inputManager.mainAbility = True
+            
+        inputManager.mousePos = pygame.mouse.get_pos()
+
     def run(self):
 #        while self.running:
             self.eventManager.update()

@@ -13,4 +13,6 @@ class InputManager:
         self.moveLeft = False
         self.moveDown = False
         self.moveRight = False
+        self.mainAbility = False
+        self.mousePos = [0,0]
         

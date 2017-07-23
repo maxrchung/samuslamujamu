@@ -19,7 +19,7 @@ class ServerCharacter:
         self.velDel = [1.5,1.5]
         self.velMax = [10,10]
         # How much the velocity retains per frame
-        self.velRed = [0.9,0.9]
+        self.velRed = [0.8,0.8]
         
         self.width = width
         self.height = height
@@ -48,6 +48,12 @@ class ServerCharacter:
                 self.vel[1] = -self.velMax[1]
             else:
                 self.vel[1] = self.velMax[1]
+
+        self.pos[0] += self.vel[0]
+        self.pos[1] += self.vel[1]
+
+        if inputManager.mainAbility:
+            self.game.spawnBullet(self, inputManager.mousePos)
 
     def setRect(self):
         self.rect = pygame.Rect(self.pos[0] - self.width / 2.0, self.pos[1] - self.height / 2.0, self.width, self.height)

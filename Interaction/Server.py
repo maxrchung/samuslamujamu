@@ -35,7 +35,7 @@ class Server:
         game.characters = characters
         for charID, character in characters.items():
             character.game = game
-        Global.gameState = GameState(characters)
+        Global.gameState = GameState(characters, game.bullets)
         game.gameState = Global.gameState
 
     def run(self):
@@ -53,4 +53,5 @@ class Server:
     def updateInput(self):
         for inputManager in self.inputManagers:
             player = self.players[inputManager.playerID]
-            player.character.update(inputManager)
+            if player and  player.game.canUpdate():
+                player.character.update(inputManager)

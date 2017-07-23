@@ -1,5 +1,6 @@
 from GameState import *
 import Global
+from ServerBullet import *
 from ServerCharacter import *
 import pygame
 import time
@@ -18,29 +19,47 @@ class ServerGame:
         self.nextUpdate = 0
 
         self.gameState = None
+        self.bullets = {}
+        self.bulletID = 0
 
     def run(self):
-        now = time.time()
-        if now - self.nextUpdate > self.frameRate:
-            self.nextUpdate = now
+        if self.canUpdate():
+            self.nextUpdate = time.time()
             self.update()
             Global.gameState = self.gameState
 
+    def canUpdate(self):
+        can = (time.time() - self.nextUpdate) > self.frameRate
+        return can
+        
     def update(self):
-        # Movement
         for charID, character in self.characters.items():
-            # Update movement
-            # Be sure to copy and not save reference
-            currentPos = list(character.pos)
-            character.pos[0] += character.vel[0]
-            character.pos[1] += character.vel[1]
-
             # Wall collision
-            self.wallCollision(currentPos, character)
-
+            self.wallCollision(character)
             character.setRect()
 
-    def wallCollision(self, before, character):
+        for bulletID, bullet in self.bullets.items():
+            bullet.update()
+            bullet.setRect()
+        
+        removeBulletIDs = []
+        for bulletID, bullet in self.bullets.items():
+            bullet.update()
+            if bullet.getDistSquared() > bullet.totalDistSquared:
+                removeBulletIDs += [bullet.uid]
+
+        while len(removeBulletIDs) != 0:
+            del self.bullets[removeBulletIDs.pop()]
+
+    def getBulletID(self):
+        self.bulletID += 1
+        return self.bulletID
+        
+    def spawnBullet(self, character, mousePos):
+        bullet = ServerBullet(self.getBulletID(), character, character.pos, mousePos)
+        self.bullets[bullet.uid] = bullet
+
+    def wallCollision(self, character):
         if character.pos[0] - character.width / 2 < 0:
             character.pos[0] = character.width / 2
         elif character.pos[0] + character.width / 2 > self.windowSize[0]:
