@@ -1,7 +1,8 @@
-from Inputs import *
+from InputManager import *
 import pygame
+import sys
 
-class Events:
+class EventManager:
     def __init__(self):
         pass
 

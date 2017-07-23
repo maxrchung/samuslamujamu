@@ -1,4 +1,13 @@
-from Game import *
+from Client import *
+from Server import *
+import pygame
+from pygame.locals import *
 
-game = Game()
-game.run()
+pygame.init()
+
+server = Server()
+client = Client()
+
+while True:
+    server.run()
+    client.run()
