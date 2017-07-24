@@ -7,7 +7,6 @@ import pickle
 from Queue import Queue
 import socket
 import threading
-import sys
 
 class Server:
     def __init__(self):

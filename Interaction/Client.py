@@ -83,11 +83,10 @@ class Client:
                 if command == PacketCommand.gameStart:
                     self.state = ClientState.game
                     self.game = ClientGame(self)
-                    self.state = ClientState.game
-                    self.gameState = data
-                elif command == PacketCommand.gameState:
                     self.gameState = data[0]
                     self.uid = data[1]
+                elif command == PacketCommand.gameState:
+                    self.gameState = data
                     
             if self.state == ClientState.chooseName:
                 data = str(raw_input("Enter a name: "))
