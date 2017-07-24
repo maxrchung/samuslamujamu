@@ -9,7 +9,7 @@ class Client:
 		self.inGame = False
 		queue = Queue()
 		self.commands = ['Join', 'Leave']
-		self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
 		self.sock.bind(("127.0.0.1", 5002))	
 		self.thread1 = Thread( target=self.t1, args=("Thread-1", queue) )
 		self.thread2 = Thread( target=self.t2, args=("Thread-2", queue) )

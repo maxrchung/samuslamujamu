@@ -1,6 +1,5 @@
 from ClientProjectile import *
 from ClientCharacter import *
-import ClientState
 import pygame
 import ServerGame
 import time
@@ -14,8 +13,8 @@ class ClientGame:
         self.frameRate = 1 / 60.0
         self.nextUpdate = 0
 
-        self.characters = {}
-        self.projectiles = {}
+        self.characters = []
+        self.projectiles = []
 
     def run(self, gameState):
         now = time.time()
@@ -25,24 +24,28 @@ class ClientGame:
             self.draw()
         
     def update(self, gameState):
-        self.characters.clear()
-        for charID, schar in gameState.characters.items():
-            if self.client.uid == schar.player.uid:
-                self.characters[charID] = ClientCharacter(self, True, schar)
+        self.characters = []
+        for playerID, rect, health in gameState.charRects:
+            character = None
+            if self.client.uid == playerID:
+                character = ClientCharacter(self, True, rect, health)
             else:
-                self.characters[charID] = ClientCharacter(self, False, schar)
+                character = ClientCharacter(self, False, rect, health)
+            self.characters.append(character)
 
-        self.projectiles.clear()
-        for projectileID, sprojectile in gameState.projectiles.items():
-            if self.client.uid == sprojectile.character.player.uid:
-                self.projectiles[projectileID] = ClientProjectile(self, True, sprojectile)
+        self.projectiles = []
+        for playerID, rect in gameState.projectileRects:
+            projectile = None
+            if self.client.uid == playerID:
+                projectile = ClientProjectile(self, True, rect)
             else:
-                self.projectiles[projectileID] = ClientProjectile(self, False, sprojectile)
+                projectile = ClientProjectile(self, False, rect)
+            self.projectiles.append(projectile)
 
     def draw(self):
         self.display.fill(self.bgColor)
-        for charID, character in self.characters.items():
+        for character in self.characters:
             character.draw()
-        for projectileID, projectile in self.projectiles.items():
+        for projectile in self.projectiles:
             projectile.draw()
         pygame.display.flip()

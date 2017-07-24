@@ -1,24 +1,45 @@
-import Global
+from Queue import Queue
 from ServerCharacter import *
 import ServerGame
 from ServerPlayer import *
+import PacketCommand
+import pickle
+from Queue import Queue
+import socket
+import threading
 
 class Server:
     def __init__(self):
         self.inputManagers = []
         self.players  = {}
-        self.games = {}    
+        self.games = {}
+        self.matchMaking = Queue()
 
         self.playerID = 0
         self.gameID = 0
         self.characterID = 0
 
-        player1 = self.createPlayer()
-        player2 = self.createPlayer()
-        self.createGame(player1, player2)
-
         self.running = True
 
+	self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	self.sock.bind(("127.0.0.1", 5004))
+
+        self.lock = threading.Lock()
+        self.packets = Queue()
+        self.networkingThread = threading.Thread(target=self.networking)
+        self.networkingThread.daemon = True
+        self.networkingThread.start()
+
+        print "Server started"
+
+    def networking(self):
+        while self.running:
+	    data, addr = self.sock.recvfrom(1024)
+            unpickled = pickle.loads(data)
+            self.lock.acquire()
+	    self.packets.put((unpickled,addr))
+            self.lock.release()
+        
     def getPlayerID(self):
         self.playerID += 1
         return self.playerID
@@ -31,9 +52,9 @@ class Server:
         self.characterID += 1
         return self.characterID
 
-    def createPlayer(self):
-        self.player = ServerPlayer(self.getPlayerID())
-        self.players[self.player.uid] = self.player
+    def createPlayer(self, name, ip, port):
+        self.player = ServerPlayer(self.getPlayerID(), name, ip, port)
+        self.players[self.player.ip] = self.player
         return self.player
 
     def associatePlayer(self, player, game, character):
@@ -45,17 +66,15 @@ class Server:
         game.characters = characters
         for charID, character in characters.items():
             character.game = game
-        Global.gameState = GameState(characters, game.projectiles)
-        game.gameState = Global.gameState
     
     def createGame(self, player1, player2):
-        game = ServerGame.ServerGame(self.getGameID())
+        game = ServerGame.ServerGame(self, self.getGameID())
         self.games[game.uid] = game
-
+        
         topPos = [ServerGame.width / 2, 100]
         botPos = [ServerGame.width / 2, ServerGame.height - 100]
-        character1 = ServerCharacter(self.getCharacterID(), topPos)
-        character2 = ServerCharacter(self.getCharacterID(), botPos)
+        character1 = ServerCharacter(self.getCharacterID(), topPos, player1.name)
+        character2 = ServerCharacter(self.getCharacterID(), botPos, player2.name)
         characters = {
             character1.uid: character1,
             character2.uid: character2
@@ -68,19 +87,48 @@ class Server:
         return game
     
     def run(self):
-        # while self.running:
+        while self.running:
             inputManagers = []
-
-            playerID = 1
-            inputManagers.append([Global.inputManager, playerID])
             
-            for inputManager, playerID in inputManagers:
-                self.updateInput(inputManager, playerID)
+            while not self.packets.empty() > 0: 
+                self.lock.acquire()
+                packet = self.packets.get()
+                self.lock.release()
+                
+                command, data = packet[0]
+                ip, port = packet[1]
+
+                if command == PacketCommand.name:
+                    player = self.createPlayer(data, ip, port)
+                    self.matchMaking.put(player)
+                elif command == PacketCommand.inputManager:
+                    if ip in self.players:
+                        player = self.players[ip]
+                        inputManagers.append([data, player])
+
+            while self.matchMaking.qsize() >= 2:
+                player1 = self.matchMaking.get()
+                player2 = self.matchMaking.get()
+                game = self.createGame(player1, player2)
+                print "Game created:", game.uid
+                
+                self.sendPacket(PacketCommand.gameStart, game.getGameState(), player1)
+                self.sendPacket(PacketCommand.gameStart, game.getGameState(), player2)
+            
+            for inputManager, player in inputManagers:
+                self.updateInput(inputManager, player)
         
             for gameID, game in self.games.items():
                 game.run()
 
-    def updateInput(self, inputManager, playerID):
-        player = self.players[playerID]
-        if player and player.game.canUpdate():
+    def sendPacket(self, command, data, player):
+        pickled = pickle.dumps([command, data])
+        self.sock.sendto(pickled, (player.ip, player.port))
+            
+    def updateInput(self, inputManager, player):
+        if  player.game.canUpdate():
             player.character.update(inputManager)
+
+if __name__ == "__main__":
+    server = Server()
+    server.run()

@@ -2,24 +2,14 @@ import ServerProjectile
 import pygame
 
 class ClientProjectile:
-    def __init__(self, game, main, sprojectile):
+    def __init__(self, game, main, rect):
         self.game = game
-        self.main = main
-        self.setFromServer(sprojectile)
-        
-        self.width = ServerProjectile.width
-        self.height = ServerProjectile.height
+        self.rect = rect
 
-        self.mainColor = pygame.Color(0,0,200,255)
-        self.enemyColor = pygame.Color(200,0,0,255)
+        if main:
+            self.color = pygame.Color(0,0,200,255)
+        else:
+            self.color = pygame.Color(200,0,0,255)
 
     def draw(self):
-        color = None
-        if self.main:
-            color = self.mainColor
-        else:
-            color = self.enemyColor
-        pygame.draw.circle(self.game.display, color, self.rect.center, self.rect.width / 2)
-
-    def setFromServer(self, sprojectile):
-        self.rect = sprojectile.rect
+        pygame.draw.circle(self.game.display, self.color, self.rect.center, self.rect.width / 2)

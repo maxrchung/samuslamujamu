@@ -1,2 +1,3 @@
-matchMaking = "matchMaking"
-game = "game"
+chooseName = 0
+matchMaking = 1
+game = 2

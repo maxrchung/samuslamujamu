@@ -8,12 +8,14 @@ height = 50.0
 maxHealth = 1
 
 class ServerCharacter:
-    def __init__(self, uid, pos):
+    def __init__(self, uid, pos, name):
         # Unique ID associated with character
         self.uid = uid
+        self.pos = pos
+        self.name = name
+        
         self.player = None
         self.game = None
-        self.pos = pos
 
         self.health = maxHealth
         

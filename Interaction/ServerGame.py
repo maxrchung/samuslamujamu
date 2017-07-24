@@ -1,5 +1,5 @@
 from GameState import *
-import Global
+import PacketCommand
 from ServerProjectile import *
 from ServerCharacter import *
 from Vector import *
@@ -10,25 +10,36 @@ import time
 windowSize = width, height = 1280, 720
 
 class ServerGame:
-    def __init__(self, uid):
+    def __init__(self, server, uid):
+        self.server = server
+        
         # Unique ID for game
         self.uid = uid
-        self.characters = {}
+        self.characters = None
 
         self.windowSize = windowSize
 
-        self.frameRate = 1 / 60.0
+        self.frameRate = 1 / 30.0
         self.nextUpdate = 0
 
-        self.gameState = None
         self.projectiles = {}
         self.projectileID = 0
 
+    def getGameState(self):
+        charRects = []
+        for charID, character in self.characters.items():
+            charRects.append((character.player.uid, character.rect, character.health))
+
+        projectileRects = []
+        for projectileID, projectile in self.projectiles.items():
+            projectileRects.append((projectile.character.player.uid, projectile.character.rect))
+
+        return GameState(charRects, projectileRects)
+        
     def run(self):
         if self.canUpdate():
             self.nextUpdate = time.time()
             self.update()
-            Global.gameState = self.gameState
 
     def canUpdate(self):
         can = (time.time() - self.nextUpdate) > self.frameRate
@@ -50,6 +61,11 @@ class ServerGame:
 
         while len(removeProjectileIDs) != 0:
             del self.projectiles[removeProjectileIDs.pop()]
+
+        gs = self.getGameState()
+        
+        for characterID, character in self.characters.items():
+            self.server.sendPacket(PacketCommand.gameState, self.getGameState(), character.player)
 
     def getProjectileID(self):
         self.projectileID += 1
