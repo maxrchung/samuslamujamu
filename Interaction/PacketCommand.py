@@ -4,7 +4,7 @@ name = 0
 # data = GameState
 gameState = 1
 
-# data = winner
+# data = GameState, playerid
 gameStart = 2
 
 # data = winner

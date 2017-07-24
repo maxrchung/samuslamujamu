@@ -7,10 +7,13 @@ import pickle
 from Queue import Queue
 import socket
 import threading
+import sys
 
 class Server:
     def __init__(self):
         self.inputManagers = []
+        # Keyed by ip instead of ID
+        # Everything else is keyed by ID
         self.players  = {}
         self.games = {}
         self.matchMaking = Queue()
@@ -22,7 +25,7 @@ class Server:
         self.running = True
 
 	self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	self.sock.bind(("127.0.0.1", 5004))
+	self.sock.bind(("192.168.0.106", 6669))
 
         self.lock = threading.Lock()
         self.packets = Queue()
@@ -101,6 +104,8 @@ class Server:
                 if command == PacketCommand.name:
                     player = self.createPlayer(data, ip, port)
                     self.matchMaking.put(player)
+                    print "Added", ip, "to matchmaking"
+                    
                 elif command == PacketCommand.inputManager:
                     if ip in self.players:
                         player = self.players[ip]
@@ -111,9 +116,10 @@ class Server:
                 player2 = self.matchMaking.get()
                 game = self.createGame(player1, player2)
                 print "Game created:", game.uid
-                
-                self.sendPacket(PacketCommand.gameStart, game.getGameState(), player1)
-                self.sendPacket(PacketCommand.gameStart, game.getGameState(), player2)
+
+                gameState = game.getGameState()
+                self.sendPacket(PacketCommand.gameStart, [gameState, player1.uid], player1)
+                self.sendPacket(PacketCommand.gameStart, [gameState, player2.uid], player2)
             
             for inputManager, player in inputManagers:
                 self.updateInput(inputManager, player)

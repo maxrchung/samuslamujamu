@@ -15,7 +15,7 @@ class Client:
         self.eventManager = EventManager()
         self.running = True
 
-        self.uid = 1
+        self.uid = 0
         
         self.game = None
         self.state = ClientState.chooseName
@@ -23,10 +23,10 @@ class Client:
         self.gameState = None
         
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.serverHost = "127.0.0.1"
-        self.clientHost = "127.0.0.1"
+        self.serverHost = "192.168.0.106"
+        self.serverPort = 6669
+        self.clientHost = "192.168.0.106"
         self.clientPort = 5002
-        self.serverPort = 5004
         self.sock.bind((self.clientHost, self.clientPort))
 
         self.lock = threading.Lock()
@@ -86,7 +86,8 @@ class Client:
                     self.state = ClientState.game
                     self.gameState = data
                 elif command == PacketCommand.gameState:
-                    self.gameState = data
+                    self.gameState = data[0]
+                    self.uid = data[1]
                     
             if self.state == ClientState.chooseName:
                 data = str(raw_input("Enter a name: "))
