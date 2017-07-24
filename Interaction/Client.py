@@ -65,7 +65,7 @@ class Client:
         mouse = pygame.mouse.get_pressed()
         if mouse[0]:
             self.inputManager.mainAbility = True
-            
+
         self.inputManager.mousePos = pygame.mouse.get_pos()
 
         self.sendPacket(PacketCommand.inputManager, self.inputManager)
@@ -85,8 +85,18 @@ class Client:
                     self.game = ClientGame(self)
                     self.gameState = data[0]
                     self.uid = data[1]
+                    print "Joined game"                    
                 elif command == PacketCommand.gameState:
                     self.gameState = data
+                elif command == PacketCommand.gameEnd:
+                    if self.uid == data:
+                        print "You lost!"
+                    else:
+                        print "You won!"
+                    print "Looking for another game..."
+                    pygame.display.quit()
+                    pygame.quit()
+                    self.state = ClientState.matchMaking
                     
             if self.state == ClientState.chooseName:
                 data = str(raw_input("Enter a name: "))

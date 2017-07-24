@@ -25,6 +25,7 @@ class ServerProjectile:
 
     def update(self):
         self.pos = self.pos.add(self.move)
+        self.setRect()
 
     def getDistSquared(self):
         dist = self.pos.minus(self.startPos).lengthSquared()

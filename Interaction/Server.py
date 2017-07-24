@@ -90,8 +90,6 @@ class Server:
     
     def run(self):
         while self.running:
-            inputManagers = []
-            
             while not self.packets.empty() > 0: 
                 self.lock.acquire()
                 packet = self.packets.get()
@@ -108,31 +106,24 @@ class Server:
                 elif command == PacketCommand.inputManager:
                     if ip in self.players:
                         player = self.players[ip]
-                        inputManagers.append([data, player])
+                        player.character.inputManager = data
 
             while self.matchMaking.qsize() >= 2:
                 player1 = self.matchMaking.get()
                 player2 = self.matchMaking.get()
                 game = self.createGame(player1, player2)
-                print "Game created:", game.uid
+                print "Game", game.uid, "created"
 
                 gameState = game.getGameState()
                 self.sendPacket(PacketCommand.gameStart, [gameState, player1.uid], player1)
                 self.sendPacket(PacketCommand.gameStart, [gameState, player2.uid], player2)
-            
-            for inputManager, player in inputManagers:
-                self.updateInput(inputManager, player)
-        
+
             for gameID, game in self.games.items():
                 game.run()
 
     def sendPacket(self, command, data, player):
         pickled = pickle.dumps([command, data])
         self.sock.sendto(pickled, (player.ip, player.port))
-            
-    def updateInput(self, inputManager, player):
-        if  player.game.canUpdate():
-            player.character.update(inputManager)
 
 if __name__ == "__main__":
     server = Server()

@@ -1,6 +1,7 @@
 from Ability import *
 from ServerGame import *
 from InputManager import *
+import PacketCommand
 import pygame
 
 width = 50.0
@@ -32,18 +33,19 @@ class ServerCharacter:
 
         self.mainAbility = Ability(0.5)
         self.reallySmallNumber = 0.0001
+        self.inputManager = InputManager()
         
-    def update(self, inputManager):
+    def update(self):
         self.vel[0] *= self.velRed[0]
         self.vel[1] *= self.velRed[1]
 
-        if inputManager.moveUp:
+        if self.inputManager.moveUp:
             self.vel[1] -= self.velDel[1]
-        if inputManager.moveLeft:
+        if self.inputManager.moveLeft:
             self.vel[0] -= self.velDel[0]
-        if inputManager.moveDown:
+        if self.inputManager.moveDown:
             self.vel[1] += self.velDel[1]
-        if inputManager.moveRight:
+        if self.inputManager.moveRight:
             self.vel[0] += self.velDel[0]
 
         if abs(self.vel[0]) > self.velMax[0]:
@@ -60,15 +62,14 @@ class ServerCharacter:
         self.pos[0] += self.vel[0]
         self.pos[1] += self.vel[1]
 
-        if inputManager.mainAbility:
+        if self.inputManager.mainAbility:
             if self.mainAbility.ready():
-                self.game.spawnProjectile(self, inputManager.mousePos)
+                self.game.spawnProjectile(self, self.inputManager.mousePos)
+
+        self.inputManager.clear()
 
     def applyDamage(self, damage):
         self.health -= damage
-        if self.health < self.reallySmallNumber:
-            print "Game over!"
-            self.health = 0
                 
     def setRect(self):
         self.rect = pygame.Rect(self.pos[0] - self.width / 2.0, self.pos[1] - self.height / 2.0, self.width, self.height)

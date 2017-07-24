@@ -19,11 +19,13 @@ class ServerGame:
 
         self.windowSize = windowSize
 
-        self.frameRate = 1 / 30.0
+        self.frameRate = 1 / 60.0
         self.nextUpdate = 0
 
         self.projectiles = {}
         self.projectileID = 0
+
+        self.reallySmallNumber = 0.0001
 
     def getGameState(self):
         charRects = []
@@ -32,7 +34,7 @@ class ServerGame:
 
         projectileRects = []
         for projectileID, projectile in self.projectiles.items():
-            projectileRects.append((projectile.character.player.uid, projectile.character.rect))
+            projectileRects.append((projectile.character.player.uid, projectile.rect))
 
         return GameState(charRects, projectileRects)
         
@@ -46,12 +48,14 @@ class ServerGame:
         return can
         
     def update(self):
+        for charID, character in self.characters.items():
+            character.update()
+        
         self.wallCollision(self.characters)
 
         removeProjectileIDs = Set()
         for projectileID, projectile in self.projectiles.items():
             projectile.update()
-            projectile.setRect()
             self.projectileCollision(self.characters, projectile, removeProjectileIDs)
             
         for projectileID, projectile in self.projectiles.items():
@@ -82,6 +86,11 @@ class ServerGame:
                 if diff.length() < character.width / 2 + projectile.width / 2:
                     removeProjectileIDs.add(projectile.uid)
                     character.applyDamage(projectile.damage)
+                    if character.health < self.reallySmallNumber:
+                        print "Game", self.uid, "over"
+                        for characterID, character in characters.items():
+                            self.server.sendPacket(PacketCommand.gameEnd, character.player.uid, character.player)
+                        self.server.games.pop(self.uid)
                 
     def wallCollision(self, characters):
         for charID, character in self.characters.items():            

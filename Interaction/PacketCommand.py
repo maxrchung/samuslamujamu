@@ -7,7 +7,7 @@ gameState = 1
 # data = GameState, playerid
 gameStart = 2
 
-# data = winner
+# data = loser
 gameEnd = 3
 
 # data = InputManager
