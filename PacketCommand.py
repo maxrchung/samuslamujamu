@@ -10,8 +10,11 @@ gameStart = 2
 # data = loser
 gameEnd = 3
 
+# data = None
+gameDisconnect = 4
+
 # data = InputManager
-inputManager = 4
+inputManager = 5
 
 # data = None
-alive = 5
+alive = 6

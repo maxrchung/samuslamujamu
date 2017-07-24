@@ -1,11 +1,12 @@
 from GameState import *
 import PacketCommand
+import PlayerState
+import pygame
 from ServerProjectile import *
 from ServerCharacter import *
-from Vector import *
-import pygame
 from sets import Set
 import time
+from Vector import *
 
 windowSize = width, height = 1280, 720
 
@@ -87,9 +88,11 @@ class ServerGame:
                     removeProjectileIDs.add(projectile.uid)
                     character.applyDamage(projectile.damage)
                     if character.health < self.reallySmallNumber:
-                        print "Game", self.uid, "over"
+                        print "Game", self.uid, "finished"
                         for characterID, character in characters.items():
                             self.server.sendPacket(PacketCommand.gameEnd, character.player.uid, character.player)
+                            self.server.matchMaking.put(character.player)
+                            character.player.state = PlayerState.matchMaking
                         self.server.games.pop(self.uid)
                 
     def wallCollision(self, characters):

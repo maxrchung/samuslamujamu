@@ -7,6 +7,11 @@ import pickle
 from Queue import Queue
 import socket
 import threading
+import time
+
+checkAlive = 4.0
+host = "192.168.0.106"
+port = 6669
 
 class Server:
     def __init__(self):
@@ -15,7 +20,7 @@ class Server:
         # Everything else is keyed by ID
         self.players  = {}
         self.games = {}
-        self.matchMaking = Queue()
+        self.matchMaking = []
 
         self.playerID = 0
         self.gameID = 0
@@ -24,13 +29,15 @@ class Server:
         self.running = True
 
 	self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	self.sock.bind(("192.168.0.106", 6669))
+	self.sock.bind((host, port))
 
         self.lock = threading.Lock()
         self.packets = Queue()
         self.networkingThread = threading.Thread(target=self.networking)
         self.networkingThread.daemon = True
         self.networkingThread.start()
+
+        self.checkAlive = checkAlive
 
         print "Server started"
 
@@ -54,8 +61,8 @@ class Server:
         self.characterID += 1
         return self.characterID
 
-    def createPlayer(self, name, ip, port):
-        self.player = ServerPlayer(self.getPlayerID(), name, ip, port)
+    def createPlayer(self, name, ip, port, nextAlive):
+        self.player = ServerPlayer(self.getPlayerID(), name, ip, port, nextAlive)
         self.players[self.player.ip] = self.player
         return self.player
 
@@ -99,8 +106,10 @@ class Server:
                 ip, port = packet[1]
 
                 if command == PacketCommand.name:
-                    player = self.createPlayer(data, ip, port)
-                    self.matchMaking.put(player)
+                    nextAlive = time.time() + self.checkAlive
+                    player = self.createPlayer(data, ip, port, nextAlive)
+                    self.matchMaking.append(player)
+                    player.state = PlayerState.matchMaking
                     print "Added", ip, "to matchmaking"
                     
                 elif command == PacketCommand.inputManager:
@@ -108,16 +117,43 @@ class Server:
                         player = self.players[ip]
                         player.character.inputManager = data
 
-            while self.matchMaking.qsize() >= 2:
-                player1 = self.matchMaking.get()
-                player2 = self.matchMaking.get()
+                elif command == PacketCommand.alive:
+                    if ip in self.players:
+                        player = self.players[ip]
+                        nextAlive = time.time() + self.checkAlive
+                        player.nextAlive = nextAlive
+
+            # Check alive status
+            now = time.time()
+            removePlayers = []
+            for playerIP, player in self.players.items():
+                if now - player.nextAlive > self.checkAlive:
+                    if player.state == PlayerState.matchMaking:
+                        self.matchMaking.remove(player)
+                    elif player.state == PlayerState.game:
+                        game = player.character.game
+                        print "Game", self.game.uid, "disconnected"
+                        for characterID, character in game.characters.items():
+                            if characterID != player.character.uid:
+                                self.server.sendPacket(PacketCommand.gameDisconnect, player.uid, player)
+                                self.matchMaking.append(player)
+                                player.state = PlayerState.matchMaking
+                        self.server.games.pop(self.uid)
+                    print "Removed", playerIP
+                    players.pop(playerIP)
+                        
+            while len(self.matchMaking) >= 2:
+                player1 = self.matchMaking.pop(0)
+                player1.state = game
+                player2 = self.matchMaking.pop(0)
+                player2.state = game
                 game = self.createGame(player1, player2)
                 print "Game", game.uid, "created"
 
                 gameState = game.getGameState()
                 self.sendPacket(PacketCommand.gameStart, [gameState, player1.uid], player1)
                 self.sendPacket(PacketCommand.gameStart, [gameState, player2.uid], player2)
-
+                
             for gameID, game in self.games.items():
                 game.run()
 
