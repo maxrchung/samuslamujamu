@@ -43,12 +43,15 @@ class Client:
 
     def networking(self):
         while self.running:
-            #Receiving Messages from the Server
-	    data, addr = self.sock.recvfrom(1024)
-            unpickled = pickle.loads(data)
-            self.lock.acquire()
-	    self.packets.put((unpickled,addr))
-            self.lock.release()
+            try:
+                #Receiving Messages from the Server
+                data, addr = self.sock.recvfrom(1024)
+                unpickled = pickle.loads(data)
+                self.lock.acquire()
+	        self.packets.put((unpickled,addr))
+                self.lock.release()
+            except:
+                pass
         
     def getInput(self):
         self.inputManager.clear()
@@ -75,7 +78,7 @@ class Client:
 
     def run(self):
         while self.running:
-            while not self.packets.empty() > 0: 
+            while not self.packets.empty(): 
                 self.lock.acquire()
                 packet = self.packets.get()
                 self.lock.release()

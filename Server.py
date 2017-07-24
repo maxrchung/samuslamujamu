@@ -9,7 +9,7 @@ import socket
 import threading
 import time
 
-checkAlive = 4.0
+checkAlive = 10.0
 host = "192.168.0.106"
 port = 6669
 
@@ -43,11 +43,14 @@ class Server:
 
     def networking(self):
         while self.running:
-	    data, addr = self.sock.recvfrom(1024)
-            unpickled = pickle.loads(data)
-            self.lock.acquire()
-	    self.packets.put((unpickled,addr))
-            self.lock.release()
+            try:
+	        data, addr = self.sock.recvfrom(1024)
+                unpickled = pickle.loads(data)
+                self.lock.acquire()
+	        self.packets.put((unpickled,addr))
+                self.lock.release()
+            except:
+                pass
         
     def getPlayerID(self):
         self.playerID += 1
@@ -97,7 +100,7 @@ class Server:
     
     def run(self):
         while self.running:
-            while not self.packets.empty() > 0: 
+            while not self.packets.empty(): 
                 self.lock.acquire()
                 packet = self.packets.get()
                 self.lock.release()
@@ -108,8 +111,8 @@ class Server:
                 if command == PacketCommand.name:
                     nextAlive = time.time() + self.checkAlive
                     player = self.createPlayer(data, ip, port, nextAlive)
-                    self.matchMaking.append(player)
                     player.state = PlayerState.matchMaking
+                    self.matchMaking.append(player)
                     print "Added", ip, "to matchmaking"
                     
                 elif command == PacketCommand.inputManager:
@@ -125,28 +128,28 @@ class Server:
 
             # Check alive status
             now = time.time()
-            removePlayers = []
             for playerIP, player in self.players.items():
                 if now - player.nextAlive > self.checkAlive:
                     if player.state == PlayerState.matchMaking:
                         self.matchMaking.remove(player)
                     elif player.state == PlayerState.game:
                         game = player.character.game
-                        print "Game", self.game.uid, "disconnected"
                         for characterID, character in game.characters.items():
                             if characterID != player.character.uid:
-                                self.server.sendPacket(PacketCommand.gameDisconnect, player.uid, player)
-                                self.matchMaking.append(player)
-                                player.state = PlayerState.matchMaking
-                        self.server.games.pop(self.uid)
+                                self.sendPacket(PacketCommand.gameDisconnect, character.player.uid, character.player)
+                                self.matchMaking.append(character.player)
+                                character.player.state = PlayerState.matchMaking
+
+                        print playerIP
+                        self.games.pop(game.uid)
                     print "Removed", playerIP
-                    players.pop(playerIP)
+                    self.players.pop(playerIP)
                         
             while len(self.matchMaking) >= 2:
                 player1 = self.matchMaking.pop(0)
-                player1.state = game
+                player1.state = PlayerState.game
                 player2 = self.matchMaking.pop(0)
-                player2.state = game
+                player2.state = PlayerState.game
                 game = self.createGame(player1, player2)
                 print "Game", game.uid, "created"
 

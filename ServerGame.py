@@ -91,7 +91,7 @@ class ServerGame:
                         print "Game", self.uid, "finished"
                         for characterID, character in characters.items():
                             self.server.sendPacket(PacketCommand.gameEnd, character.player.uid, character.player)
-                            self.server.matchMaking.put(character.player)
+                            self.server.matchMaking.append(character.player)
                             character.player.state = PlayerState.matchMaking
                         self.server.games.pop(self.uid)
                 
